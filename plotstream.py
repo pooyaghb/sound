@@ -5,15 +5,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 channels = 2
-chunk    = 100
-duration = 2083 * 2
-du_tmp   = 2083
+chunk    = 256
+duration = 5333 * 187
+du_tmp   = 5333
 N        = int(duration/du_tmp)
 LEN      = N * chunk
 
 clientport   = 12500
 serverport   = 11500
-clientaddr   = ("192.168.1.162", clientport)
+clientaddr   = ("192.168.1.152", clientport)
 clientsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 clientsocket.bind(clientaddr)
 print(f"Listening on {clientaddr}")
@@ -34,19 +34,29 @@ plt.show(block = False)
 
 
 while True:
-    for i in range(N):
-        message = clientsocket.recvfrom(2 * chunk * channels + 1)[0][1:]
-        #print(len(message))
-        data[i*chunk*channels:(i+1)*chunk*channels] = struct.unpack(f"<{chunk * channels}h", message)
+    
+    message = clientsocket.recvfrom(2 * chunk * channels + 1)[0]  
+    
+    if(message[0] == 255):
+        data[0:chunk*channels] = struct.unpack(f"<{chunk * channels}h", message[1:])
+
+        for i in range(N-1):
+            message = clientsocket.recvfrom(2 * chunk * channels + 1)[0]
+            data[(i+1)*chunk*channels:(i+2)*chunk*channels] = struct.unpack(f"<{chunk * channels}h", message[1:])
+            
+            
         #print(message[0])
     
-    datach1 = data[::2]
-    datach2 = data[1::2]
+        datach1 = data[::2]
+        datach2 = data[1::2]
 
-    line1.set_ydata(datach1[0:-2])
-    line2.set_ydata(datach2[0:-2])
-    fig.canvas.draw()
-    fig.canvas.flush_events()
+        line1.set_ydata(datach1[0:-2])
+        line2.set_ydata(datach2[0:-2])
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+    
+    else:
+        continue
 
 
 
